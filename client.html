@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webcam Capture</title>
+</head>
+<body>
+  <h1>Capture Image from Webcam</h1>
+  <video id="video" width="640" height="480" autoplay></video>
+  <button id="capture">Capture</button>
+  <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+  <script>
+    const video = document.getElementById('video');
+
+    // Get access to the webcam
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+        video.srcObject = stream;
+        video.play();
+      });
+    }
+
+    // Elements for taking the snapshot
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const captureButton = document.getElementById('capture');
+
+    captureButton.addEventListener('click', () => {
+      context.drawImage(video, 0, 0, 640, 480);
+      const dataURL = canvas.toDataURL('image/png');
+      uploadImage(dataURL);
+    });
+
+    function uploadImage(dataURL) {
+  fetch('https://td2889608.extforms.netsuite.com/app/site/hosting/scriptlet.nl?script=246&deploy=1&compid=TD2889608&ns-at=AAEJ7tMQvCn0Eg_Pitnwrl1tKS_8hyWD1cyBAP37QWqwYq8YJRA', {
+    method: 'POST',
+    body: dataURLToBlob(dataURL),
+    headers: {
+      'Content-Type': 'application/octet-stream'
+    }
+  })
+  .then(response => response.json())
+  .then(result => {
+    console.log('File uploaded successfully:', result);
+  })
+  .catch(error => {
+    console.error('Error uploading file:', error);
+  });
+}
+
+function dataURLToBlob(dataURL) {
+  const parts = dataURL.split(';base64,');
+  const contentType = parts[0].split(':')[1];
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+
+  return new Blob([uInt8Array], { type: contentType });
+}
+
+function uploadImage(dataURL) {
+  const formData = new FormData();
+  formData.append('file', dataURLToBlob(dataURL), 'captured_image.png');
+
+  fetch('https://td2889608.extforms.netsuite.com/app/site/hosting/scriptlet.nl?script=246&deploy=1&compid=TD2889608&ns-at=AAEJ7tMQvCn0Eg_Pitnwrl1tKS_8hyWD1cyBAP37QWqwYq8YJRA', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      // 'Content-Type' should not be set when sending FormData, fetch will set the correct boundary
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.text().then(text => { throw new Error(text); });
+    }
+    return response.json();
+  })
+  .then(result => {
+    console.log('File uploaded successfully:', result);
+  })
+  .catch(error => {
+    console.error('Error uploading file:', error);
+  });
+}
+
+
+
+    // function dataURLToBlob(dataURL) {
+    //   const binary = atob(dataURL.split(',')[1]);
+    //   const array = [];
+    //   for (let i = 0; i < binary.length; i++) {
+    //     array.push(binary.charCodeAt(i));
+    //   }
+    //   return new Blob([new Uint8Array(array)], { type: 'image/png' });
+    // }
+  </script>
+</body>
+</html>
