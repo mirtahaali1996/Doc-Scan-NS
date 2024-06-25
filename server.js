@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const formidable = require('formidable');
+const fs = require('fs');
 
 const app = express();
 const port = 3000;
@@ -9,13 +10,20 @@ const port = 3000;
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 
 // Ensure the upload directory exists
-const fs = require('fs');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Middleware to serve static files from the public folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'doc-scan-nodejs')));
+const form_path = path.join(__dirname, 'client.html');
+
+app.get('/', function (req, res) {
+    res.sendFile(form_path);
+});
 
 // Route for uploading image
 app.post('/upload', (req, res) => {
@@ -39,20 +47,10 @@ app.post('/upload', (req, res) => {
       return res.status(400).send({ msg: 'No file uploaded!' });
     }
 
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const newFileName = uniqueSuffix + '-' + file.originalFilename;
-    const newFilePath = path.join(uploadDir, newFileName);
-
-    // Move the file to the new location
-    fs.rename(file.filepath, newFilePath, (err) => {
-      if (err) {
-        return res.status(500).send({ msg: 'Error saving file', error: err.message });
-      }
-
-      res.send({
-        msg: 'File uploaded successfully!',
-        file: `uploads/${newFileName}`
-      });
+    // The file is automatically saved to the uploadDir by formidable
+    res.send({
+      msg: 'File uploaded successfully!',
+      // file: `uploads/${path.basename(file.filepath)}`
     });
   });
 });
